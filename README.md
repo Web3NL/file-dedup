@@ -169,6 +169,62 @@ This is a minimal implementation. Potential future features include:
 
 ## Development
 
+### Quick Development Commands
+
+This project includes several convenient scripts and commands for development:
+
+```bash
+# Run all code quality checks (format, lint, test)
+make check
+# or
+./scripts/check.sh
+
+# Auto-fix formatting and linting issues
+make check-fix
+# or
+./scripts/check.sh --fix
+
+# Individual commands
+make format        # Format code with rustfmt
+make lint          # Run clippy linting
+make test          # Run tests
+make build         # Build debug version
+make build-release # Build optimized release
+```
+
+### Setup Development Environment
+
+```bash
+# Install all development tools and setup pre-commit hooks
+make setup
+
+# Or install tools manually
+make install-tools
+```
+
+### Pre-commit Hooks
+
+This project supports pre-commit hooks to ensure code quality:
+
+```bash
+# Install pre-commit (requires Python)
+pip install pre-commit
+
+# Setup hooks
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+```
+
+### Code Quality Standards
+
+Before contributing or releasing, ensure your code passes all checks:
+
+1. **Formatting**: `cargo fmt --all` (enforced by CI)
+2. **Linting**: `cargo clippy --all-targets --all-features -- -D warnings` (enforced by CI)
+3. **Tests**: `cargo test` (all tests must pass)
+
 ### Building from Source
 
 ```bash
@@ -225,12 +281,22 @@ cargo build --release
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Run tests (`cargo test`)
-5. Run clippy (`cargo clippy`)
-6. Format code (`cargo fmt`)
-7. Commit changes (`git commit -m 'Add amazing feature'`)
-8. Push to branch (`git push origin feature/amazing-feature`)
-9. Open a Pull Request
+4. **Run quality checks**: `make check` (or `./scripts/check.sh`)
+5. **Auto-fix issues**: `make check-fix` (if needed)
+6. Commit changes (`git commit -m 'Add amazing feature'`)
+7. Push to branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+**Note**: The project uses pre-commit hooks. Run `make setup` to install them automatically.
+
+### Code Quality Checklist
+
+Before submitting a PR, ensure:
+- [ ] Code is formatted (`cargo fmt --all`)
+- [ ] Clippy passes (`cargo clippy --all-targets --all-features -- -D warnings`)
+- [ ] All tests pass (`cargo test`)
+- [ ] No new warnings are introduced
+- [ ] Documentation is updated (if applicable)
 
 ## License
 

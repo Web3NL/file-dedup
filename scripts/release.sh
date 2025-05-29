@@ -110,6 +110,15 @@ else
     exit 1
 fi
 
+# Run clippy linting
+print_status "Running clippy linting..."
+if cargo clippy --all-targets --all-features -- -D warnings; then
+    print_success "Clippy checks passed"
+else
+    print_error "Clippy found issues. Fix them before releasing."
+    exit 1
+fi
+
 # Run tests
 print_status "Running tests..."
 if cargo test; then

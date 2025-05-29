@@ -65,10 +65,7 @@ pub fn collect_files(
             if size > 0 {
                 // Skip empty files
                 let file_info = FileInfo::new(path.to_path_buf(), size);
-                files_by_size
-                    .entry(size)
-                    .or_default()
-                    .push(file_info);
+                files_by_size.entry(size).or_default().push(file_info);
                 *total_files += 1;
 
                 if verbose {
@@ -86,10 +83,7 @@ pub fn collect_files(
                             if size > 0 {
                                 // Skip empty files
                                 let file_info = FileInfo::new(entry.path().to_path_buf(), size);
-                                files_by_size
-                                    .entry(size)
-                                    .or_default()
-                                    .push(file_info);
+                                files_by_size.entry(size).or_default().push(file_info);
                                 *total_files += 1;
 
                                 if verbose {
@@ -151,10 +145,7 @@ pub fn calculate_potential_savings(files: &[FileInfo]) -> u64 {
     let mut files_by_size: HashMap<u64, Vec<&FileInfo>> = HashMap::new();
 
     for file in files {
-        files_by_size
-            .entry(file.size)
-            .or_default()
-            .push(file);
+        files_by_size.entry(file.size).or_default().push(file);
     }
 
     let mut savings = 0u64;
