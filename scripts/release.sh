@@ -149,7 +149,7 @@ fi
 # Commit version bump
 print_status "Committing version bump..."
 git add Cargo.toml Cargo.lock
-git commit -m "Bump version to $VERSION"
+git commit -m "Bump version to $VERSION [skip ci]"
 print_success "Version bump committed"
 
 # Create tag
