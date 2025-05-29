@@ -1,7 +1,8 @@
 //! A minimal file deduplication library
 //! 
 //! This library provides functionality to find duplicate files using xxHash
-//! with size-based pre-filtering for efficiency.
+//! with size-based pre-filtering for efficiency. Supports both report-only
+//! and interactive duplicate resolution modes.
 
 use xxhash_rust::xxh3::Xxh3;
 use std::collections::HashMap;
@@ -148,6 +149,61 @@ pub fn calculate_potential_savings(files: &[FileInfo]) -> u64 {
     savings
 }
 
+/// Represents a group of duplicate files
+#[derive(Debug, Clone)]
+pub struct DuplicateGroup {
+    pub files: Vec<FileInfo>,
+    pub size: u64,
+    pub hash: String,
+}
+
+impl DuplicateGroup {
+    pub fn new(files: Vec<FileInfo>, size: u64, hash: String) -> Self {
+        Self { files, size, hash }
+    }
+}
+
+/// Find duplicate groups and return them for processing
+pub fn find_duplicate_groups(
+    files_by_size: HashMap<u64, Vec<FileInfo>>,
+    verbose: bool,
+) -> anyhow::Result<Vec<DuplicateGroup>> {
+    let mut duplicate_groups = Vec::new();
+
+    for (size, mut files) in files_by_size {
+        if files.len() < 2 {
+            continue; // No duplicates possible
+        }
+
+        if verbose {
+            println!("Checking {} files of size {} bytes", files.len(), size);
+        }
+
+        // Calculate hashes for files with the same size
+        let mut files_by_hash: HashMap<String, Vec<FileInfo>> = HashMap::new();
+
+        for file in &mut files {
+            match file.calculate_hash() {
+                Ok(hash) => {
+                    files_by_hash.entry(hash.to_string()).or_insert_with(Vec::new).push(file.clone());
+                }
+                Err(e) => {
+                    eprintln!("Warning: Could not hash {}: {}", file.path.display(), e);
+                }
+            }
+        }
+
+        // Create duplicate groups for files with same hash
+        for (hash, duplicate_files) in files_by_hash {
+            if duplicate_files.len() > 1 {
+                duplicate_groups.push(DuplicateGroup::new(duplicate_files, size, hash));
+            }
+        }
+    }
+
+    Ok(duplicate_groups)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -282,5 +338,26 @@ mod tests {
         let savings = calculate_potential_savings(&files);
         // Should save: 1 copy of 100 bytes + 2 copies of 200 bytes = 500 bytes
         assert_eq!(savings, 500);
+    }
+
+    #[test]
+    fn test_find_duplicate_groups() {
+        let temp_dir = create_test_directory_structure();
+        let mut files_by_size: HashMap<u64, Vec<FileInfo>> = HashMap::new();
+        let mut total_files = 0;
+
+        // Collect files first
+        collect_files(temp_dir.path(), &mut files_by_size, &mut total_files, false).unwrap();
+
+        // Find duplicate groups
+        let duplicate_groups = find_duplicate_groups(files_by_size, false).unwrap();
+
+        // Should find 1 duplicate group (the 3 files with identical content)
+        assert_eq!(duplicate_groups.len(), 1);
+        
+        let group = &duplicate_groups[0];
+        assert_eq!(group.files.len(), 3);
+        assert_eq!(group.size, 25); // Size of "This is duplicate content"
+        assert!(!group.hash.is_empty());
     }
 }
