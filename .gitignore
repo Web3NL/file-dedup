@@ -1,3 +1,10 @@
 /target
 /_design/
 CLAUDE.md
+
+# Test artifacts and temporary files
+*.tmp
+*.temp
+test_files/
+test_data/
+temp_test_*/
