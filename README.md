@@ -167,6 +167,71 @@ This is a minimal implementation. Potential future features include:
 - Batch processing modes
 - Symlink/hardlink creation options
 
+## Development
+
+### Building from Source
+
+```bash
+# Clone the repository
+git clone <your-repo>
+cd file-dedup
+
+# Build in debug mode
+cargo build
+
+# Build optimized release
+cargo build --release
+
+# Run tests
+cargo test
+```
+
+### Release Process
+
+This project uses automated releases via GitHub Actions. When you push a version tag, it automatically:
+
+1. Builds binaries for multiple platforms (Linux, macOS, Windows)
+2. Runs tests on all platforms
+3. Creates a GitHub release with binaries
+4. Publishes to crates.io (if configured)
+
+#### Automated Release (Recommended)
+
+```bash
+# Use the release script
+./scripts/release.sh 0.5.0
+
+# Or manually:
+# 1. Update version in Cargo.toml
+# 2. Commit changes
+# 3. Create and push tag
+git tag v0.5.0
+git push origin main
+git push origin v0.5.0
+```
+
+#### Manual Local Release
+
+```bash
+# Build release binary
+cargo build --release
+
+# The binary will be in target/release/file-dedup
+# You can copy it to your PATH or distribute it directly
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`cargo test`)
+5. Run clippy (`cargo clippy`)
+6. Format code (`cargo fmt`)
+7. Commit changes (`git commit -m 'Add amazing feature'`)
+8. Push to branch (`git push origin feature/amazing-feature`)
+9. Open a Pull Request
+
 ## License
 
 MIT License - see LICENSE file for details.
