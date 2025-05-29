@@ -162,9 +162,16 @@ print_status "Pushing changes and tag to remote repository..."
 DEFAULT_BRANCH=$(get_default_branch)
 print_status "Using branch: $DEFAULT_BRANCH"
 
-# Push branch and tag together to minimize workflow triggers
-git push origin "$DEFAULT_BRANCH" "$TAG"
-print_success "Changes and tag pushed to remote repository"
+# Push branch first (this will trigger CI, but it should be excluded due to commit message)
+git push origin "$DEFAULT_BRANCH"
+print_success "Version bump pushed to $DEFAULT_BRANCH"
+
+# Wait a moment to ensure the first push is processed
+sleep 2
+
+# Push tag separately (this will trigger the release workflow)
+git push origin "$TAG"
+print_success "Tag $TAG pushed to remote repository"
 
 echo
 print_success "Release process completed!"
