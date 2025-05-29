@@ -1,0 +1,25 @@
+# Rust formatting configuration for file-dedup
+# This ensures consistent code formatting across the project
+
+# Edition
+edition = "2021"
+
+# Line length and wrapping
+max_width = 100
+use_small_heuristics = "Default"
+
+# Function and method formatting
+fn_params_layout = "Tall"
+
+# Import formatting
+reorder_imports = true
+
+# Whitespace
+remove_nested_parens = true
+
+# Control flow
+match_block_trailing_comma = false
+
+# Other formatting options
+chain_width = 60
+single_line_if_else_max_width = 50
