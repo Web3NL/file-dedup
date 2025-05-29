@@ -127,14 +127,14 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
 
         // Display all files in the group
         for (i, file) in group.files.iter().enumerate() {
-            let parent_dir = file.path.parent()
+            println!("  {}:", i + 1);
+            println!("    Location: {}", file.path.parent()
                 .map(|p| p.display().to_string())
-                .unwrap_or_else(|| "".to_string());
-            let filename = file.path.file_name()
+                .unwrap_or_else(|| "/".to_string()));
+            println!("    Title: {}", file.path.file_name()
                 .map(|f| f.to_string_lossy().to_string())
-                .unwrap_or_else(|| file.path.display().to_string());
-            
-            println!("  {}: {}/{}", i + 1, parent_dir, filename);
+                .unwrap_or_else(|| file.path.display().to_string()));
+            println!();
         }
         println!();
 
