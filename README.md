@@ -16,11 +16,11 @@ A minimal file deduplication tool that finds duplicate files using xxHash.
 # Build the tool
 cargo build --release
 
-# Run the demo to see it in action
-./demo.sh
-
-# Or test it directly on any directory
+# Test it on any directory
 ./target/release/file-dedup ~/Documents
+
+# Or scan multiple directories
+./target/release/file-dedup ~/Documents ~/Pictures ~/Downloads
 ```
 
 ## Installation
