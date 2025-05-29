@@ -1,6 +1,6 @@
 # File Dedup
 
-A minimal file deduplication tool that finds duplicate files using SHA-256 hashing.
+A minimal file deduplication tool that finds duplicate files using xxHash.
 
 ## Features
 
@@ -55,12 +55,12 @@ file-dedup --help
 ```
 Found duplicate files:
 
-Duplicate Group 1 (Size: 2048576 bytes, Hash: a1b2c3d4e5f6789a):
+Duplicate Group 1 (Size: 2048576 bytes, Hash: a1b2c3d4):
   [KEEP] /home/user/Documents/photo1.jpg
   [DUP]  /home/user/Pictures/photo1_copy.jpg
   [DUP]  /home/user/Downloads/photo1.jpg
 
-Duplicate Group 2 (Size: 1024 bytes, Hash: f9e8d7c6b5a49876):
+Duplicate Group 2 (Size: 1024 bytes, Hash: f9e8d7c6):
   [KEEP] /home/user/Documents/notes.txt
   [DUP]  /home/user/Documents/backup/notes.txt
 
@@ -75,7 +75,7 @@ Summary:
 
 1. **File Collection**: Recursively scans specified paths for files
 2. **Size Filtering**: Groups files by size (files with different sizes can't be duplicates)
-3. **Hash Calculation**: Calculates SHA-256 hashes only for files with matching sizes
+3. **Hash Calculation**: Calculates xxHash (XXH3) only for files with matching sizes
 4. **Duplicate Detection**: Groups files with identical hashes as duplicates
 5. **Safe Reporting**: Shows results without making any changes to your files
 
@@ -89,13 +89,14 @@ Summary:
 
 This tool is designed to be completely safe:
 - **Read-only**: Never modifies, moves, or deletes any files
-- **No false positives**: Uses cryptographic hashing (SHA-256) for accurate duplicate detection
+- **No false positives**: Uses fast xxHash (XXH3) for accurate duplicate detection
 - **Clear marking**: Shows which file would be kept (`[KEEP]`) vs removed (`[DUP]`)
 
 ## Performance
 
 The tool is optimized for performance:
 - **Size pre-filtering**: Avoids expensive hash calculations for files that can't be duplicates
+- **Fast hashing**: Uses xxHash (XXH3) for extremely fast duplicate detection
 - **Streaming hash calculation**: Processes large files efficiently without loading them entirely into memory
 - **Skip empty files**: Ignores zero-byte files to focus on meaningful duplicates
 
