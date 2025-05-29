@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            suffix: ""
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            suffix: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            suffix: ".exe"
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            suffix: ""
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            suffix: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get install -y musl-tools
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package binary
+        shell: bash
+        run: |
+          binary_name="file-dedup${{ matrix.suffix }}"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            cp "target/${{ matrix.target }}/release/${binary_name}" "${binary_name}"
+          else
+            cp "target/${{ matrix.target }}/release/file-dedup" "${binary_name}"
+          fi
+          
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            7z a "file-dedup-${{ matrix.target }}.zip" "${binary_name}"
+          else
+            tar czf "file-dedup-${{ matrix.target }}.tar.gz" "${binary_name}"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: file-dedup-${{ matrix.target }}
+          path: file-dedup-${{ matrix.target }}.*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          tag_name=${GITHUB_REF#refs/tags/}
+          prev_tag=$(git describe --tags --abbrev=0 ${tag_name}^ 2>/dev/null || echo "")
+          
+          echo "# Release ${tag_name}" > release_notes.md
+          echo "" >> release_notes.md
+          
+          if [[ -n "$prev_tag" ]]; then
+            echo "## Changes since ${prev_tag}" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s" ${prev_tag}..${tag_name} >> release_notes.md
+          else
+            echo "## Changes" >> release_notes.md
+            echo "" >> release_notes.md
+            git log --pretty=format:"- %s" ${tag_name} >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "## Binaries" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "Download the appropriate binary for your platform:" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- **Linux x86_64**: \`file-dedup-x86_64-unknown-linux-gnu.tar.gz\`" >> release_notes.md
+          echo "- **Linux x86_64 (musl)**: \`file-dedup-x86_64-unknown-linux-musl.tar.gz\`" >> release_notes.md
+          echo "- **Windows x86_64**: \`file-dedup-x86_64-pc-windows-msvc.zip\`" >> release_notes.md
+          echo "- **macOS x86_64 (Intel)**: \`file-dedup-x86_64-apple-darwin.tar.gz\`" >> release_notes.md
+          echo "- **macOS ARM64 (Apple Silicon)**: \`file-dedup-aarch64-apple-darwin.tar.gz\`" >> release_notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_notes.md
+          files: |
+            file-dedup-x86_64-unknown-linux-gnu/file-dedup-x86_64-unknown-linux-gnu.tar.gz
+            file-dedup-x86_64-unknown-linux-musl/file-dedup-x86_64-unknown-linux-musl.tar.gz
+            file-dedup-x86_64-pc-windows-msvc/file-dedup-x86_64-pc-windows-msvc.zip
+            file-dedup-x86_64-apple-darwin/file-dedup-x86_64-apple-darwin.tar.gz
+            file-dedup-aarch64-apple-darwin/file-dedup-aarch64-apple-darwin.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
