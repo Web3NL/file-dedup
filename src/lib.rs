@@ -34,7 +34,13 @@ impl FileInfo {
             return Ok(self.hash.as_ref().unwrap());
         }
 
-        let mut file = File::open(&self.path)?;
+        let mut file = match File::open(&self.path) {
+            Ok(f) => f,
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                return Err(anyhow::anyhow!("Permission denied: {}", self.path.display()));
+            }
+            Err(e) => return Err(e.into()),
+        };
         let mut hasher = Xxh3::new();
         let mut buffer = [0; 8192];
 
@@ -74,9 +80,13 @@ pub fn collect_files(
             }
         }
     } else if path.is_dir() {
-        for entry in WalkDir::new(path) {
+        for entry in WalkDir::new(path).follow_links(false) {
             match entry {
                 Ok(entry) => {
+                    // Skip symlinks for security
+                    if entry.file_type().is_symlink() {
+                        continue;
+                    }
                     if entry.file_type().is_file() {
                         if let Ok(metadata) = entry.metadata() {
                             let size = metadata.len();
@@ -125,7 +135,11 @@ pub fn collect_files_for_size_calc(
             }
         }
     } else if path.is_dir() {
-        for entry in WalkDir::new(path).into_iter().flatten() {
+        for entry in WalkDir::new(path).follow_links(false).into_iter().flatten() {
+            // Skip symlinks for security
+            if entry.file_type().is_symlink() {
+                continue;
+            }
             if entry.file_type().is_file() {
                 if let Ok(metadata) = entry.metadata() {
                     let size = metadata.len();
@@ -152,7 +166,8 @@ pub fn calculate_potential_savings(files: &[FileInfo]) -> u64 {
     for (size, files_with_size) in files_by_size {
         if files_with_size.len() > 1 {
             // Assume we can remove all but one copy
-            savings += size * (files_with_size.len() as u64 - 1);
+            let count = files_with_size.len() as u64 - 1;
+            savings = savings.saturating_add(size.saturating_mul(count));
         }
     }
 
