@@ -2,9 +2,9 @@
 
 # Local release script for file-dedup
 # Usage: ./scripts/release.sh <version>
-# Example: ./scripts/release.sh 0.5.0
+# Example: ./scripts/release.sh 1.0.3
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -30,10 +30,28 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to detect default branch
+get_default_branch() {
+    local branch
+    branch=$(git branch --show-current)
+    if [ -z "$branch" ]; then
+        # Fallback: try to detect from remote branches
+        if git show-ref --verify --quiet refs/remotes/origin/main; then
+            echo "main"
+        elif git show-ref --verify --quiet refs/remotes/origin/master; then
+            echo "master"
+        else
+            echo "master"  # Final fallback
+        fi
+    else
+        echo "$branch"
+    fi
+}
+
 # Check if version is provided
-if [ -z "$1" ]; then
+if [ $# -eq 0 ]; then
     print_error "Usage: $0 <version>"
-    print_error "Example: $0 0.5.0"
+    print_error "Example: $0 1.0.3"
     exit 1
 fi
 
@@ -83,6 +101,15 @@ print_status "Updating Cargo.lock..."
 cargo check
 print_success "Updated Cargo.lock"
 
+# Check code formatting
+print_status "Checking code formatting..."
+if cargo fmt --all -- --check; then
+    print_success "Code formatting is correct"
+else
+    print_error "Code formatting issues found. Run 'cargo fmt --all' to fix them."
+    exit 1
+fi
+
 # Run tests
 print_status "Running tests..."
 if cargo test; then
@@ -116,36 +143,24 @@ git add Cargo.toml Cargo.lock
 git commit -m "Bump version to $VERSION"
 print_success "Version bump committed"
 
-# Create and push tag
+# Create tag
 print_status "Creating tag $TAG..."
 git tag -a "$TAG" -m "Release $TAG"
 print_success "Tag $TAG created"
 
-# Ask for confirmation before pushing
+# Push changes and tag
+print_status "Pushing changes and tag to remote repository..."
+DEFAULT_BRANCH=$(get_default_branch)
+print_status "Using branch: $DEFAULT_BRANCH"
+
+git push origin "$DEFAULT_BRANCH"
+git push origin "$TAG"
+print_success "Changes and tag pushed to remote repository"
+
 echo
-print_warning "Ready to push changes and tag to remote repository."
-print_warning "This will trigger the release workflow if GitHub Actions is configured."
-echo
-read -p "Do you want to push now? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    print_status "Pushing changes and tag..."
-    # Detect default branch (main or master)
-    DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || git branch --show-current)
-    git push origin "$DEFAULT_BRANCH"
-    git push origin "$TAG"
-    print_success "Changes and tag pushed to remote repository"
-    echo
-    print_success "Release process completed!"
-    print_status "If GitHub Actions is configured, the release will be automatically built and published."
-    print_status "Check: https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git.*/\1/')/actions"
-else
-    print_warning "Changes and tag were not pushed."
-    print_warning "You can push manually later with:"
-    DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || git branch --show-current)
-    print_warning "  git push origin $DEFAULT_BRANCH"
-    print_warning "  git push origin $TAG"
-fi
+print_success "Release process completed!"
+print_status "GitHub Actions will build and publish the release automatically."
+print_status "Check: https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git.*/\1/')/actions"
 
 echo
 print_status "Local release artifacts:"
