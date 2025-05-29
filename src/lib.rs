@@ -67,7 +67,7 @@ pub fn collect_files(
                 let file_info = FileInfo::new(path.to_path_buf(), size);
                 files_by_size
                     .entry(size)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(file_info);
                 *total_files += 1;
 
@@ -88,7 +88,7 @@ pub fn collect_files(
                                 let file_info = FileInfo::new(entry.path().to_path_buf(), size);
                                 files_by_size
                                     .entry(size)
-                                    .or_insert_with(Vec::new)
+                                    .or_default()
                                     .push(file_info);
                                 *total_files += 1;
 
@@ -131,14 +131,12 @@ pub fn collect_files_for_size_calc(
             }
         }
     } else if path.is_dir() {
-        for entry in WalkDir::new(path) {
-            if let Ok(entry) = entry {
-                if entry.file_type().is_file() {
-                    if let Ok(metadata) = entry.metadata() {
-                        let size = metadata.len();
-                        if size > 0 {
-                            files.push(FileInfo::new(entry.path().to_path_buf(), size));
-                        }
+        for entry in WalkDir::new(path).into_iter().flatten() {
+            if entry.file_type().is_file() {
+                if let Ok(metadata) = entry.metadata() {
+                    let size = metadata.len();
+                    if size > 0 {
+                        files.push(FileInfo::new(entry.path().to_path_buf(), size));
                     }
                 }
             }
@@ -155,7 +153,7 @@ pub fn calculate_potential_savings(files: &[FileInfo]) -> u64 {
     for file in files {
         files_by_size
             .entry(file.size)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(file);
     }
 
@@ -208,7 +206,7 @@ pub fn find_duplicate_groups(
                 Ok(hash) => {
                     files_by_hash
                         .entry(hash.to_string())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(file.clone());
                 }
                 Err(e) => {

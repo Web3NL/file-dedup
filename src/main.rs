@@ -194,7 +194,7 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
         ];
 
         let selection = Select::new()
-            .with_prompt(&format!(
+            .with_prompt(format!(
                 "{} What would you like to do with this duplicate group?",
                 "🤔".bold()
             ))
@@ -206,12 +206,10 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
             0 => {
                 // Interactive selection
                 let files_to_delete = select_files_to_delete(&group.files)?;
-                if !files_to_delete.is_empty() {
-                    if confirm_deletion(&files_to_delete)? {
-                        let deleted_count = delete_files(&files_to_delete)?;
-                        total_deleted += deleted_count;
-                        total_space_saved += group.size * deleted_count as u64;
-                    }
+                if !files_to_delete.is_empty() && confirm_deletion(&files_to_delete)? {
+                    let deleted_count = delete_files(&files_to_delete)?;
+                    total_deleted += deleted_count;
+                    total_space_saved += group.size * deleted_count as u64;
                 }
             }
             1 => {
@@ -223,12 +221,10 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
             2 => {
                 // Keep first, delete others
                 let files_to_delete: Vec<_> = group.files.iter().skip(1).collect();
-                if !files_to_delete.is_empty() {
-                    if confirm_deletion(&files_to_delete)? {
-                        let deleted_count = delete_files(&files_to_delete)?;
-                        total_deleted += deleted_count;
-                        total_space_saved += group.size * deleted_count as u64;
-                    }
+                if !files_to_delete.is_empty() && confirm_deletion(&files_to_delete)? {
+                    let deleted_count = delete_files(&files_to_delete)?;
+                    total_deleted += deleted_count;
+                    total_space_saved += group.size * deleted_count as u64;
                 }
             }
             _ => unreachable!(),
@@ -268,9 +264,10 @@ fn select_files_to_delete(files: &[FileInfo]) -> anyhow::Result<Vec<&FileInfo>> 
             .unwrap_or_else(|| file.path.display().to_string());
 
         let prompt = format!(
-            "{} Delete: {}",
+            "{} Delete: {}/{}",
             "🗑️".red(),
-            format!("{}/{}", parent_dir.dimmed(), filename.bold())
+            parent_dir.dimmed(),
+            filename.bold()
         );
 
         if Confirm::new()
@@ -308,7 +305,7 @@ fn confirm_deletion(files_to_delete: &[&FileInfo]) -> anyhow::Result<bool> {
     println!();
 
     Confirm::new()
-        .with_prompt(&format!(
+        .with_prompt(format!(
             "{} Are you sure you want to delete these files? This action cannot be undone!",
             "⚠️".red().bold()
         ))
