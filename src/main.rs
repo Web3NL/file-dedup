@@ -134,10 +134,15 @@ fn handle_report_mode(
     for path in paths {
         match collect_files_for_size_calc(path) {
             Ok(files) => {
-                potential_savings = potential_savings.saturating_add(calculate_potential_savings(&files));
+                potential_savings =
+                    potential_savings.saturating_add(calculate_potential_savings(&files));
             }
             Err(e) => {
-                eprintln!("Warning: Could not calculate savings for {}: {}", path.display(), e);
+                eprintln!(
+                    "Warning: Could not calculate savings for {}: {}",
+                    path.display(),
+                    e
+                );
             }
         }
     }
@@ -214,9 +219,8 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
                 if !files_to_delete.is_empty() && confirm_deletion(&files_to_delete)? {
                     let deleted_count = delete_files(&files_to_delete)?;
                     total_deleted += deleted_count;
-                    total_space_saved = total_space_saved.saturating_add(
-                        group.size.saturating_mul(deleted_count as u64)
-                    );
+                    total_space_saved = total_space_saved
+                        .saturating_add(group.size.saturating_mul(deleted_count as u64));
                 }
             }
             1 => {
@@ -231,9 +235,8 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
                 if !files_to_delete.is_empty() && confirm_deletion(&files_to_delete)? {
                     let deleted_count = delete_files(&files_to_delete)?;
                     total_deleted += deleted_count;
-                    total_space_saved = total_space_saved.saturating_add(
-                        group.size.saturating_mul(deleted_count as u64)
-                    );
+                    total_space_saved = total_space_saved
+                        .saturating_add(group.size.saturating_mul(deleted_count as u64));
                 }
             }
             _ => unreachable!(),
@@ -330,14 +333,20 @@ fn delete_files(files_to_delete: &[&FileInfo]) -> anyhow::Result<usize> {
         // Verify file still exists and has expected size (TOCTOU protection)
         if let Ok(metadata) = fs::metadata(&file.path) {
             if metadata.len() != file.size {
-                print_error(&format!("File {} changed size, skipping deletion", file.path.display()));
+                print_error(&format!(
+                    "File {} changed size, skipping deletion",
+                    file.path.display()
+                ));
                 continue;
             }
         } else {
-            print_error(&format!("File {} no longer exists, skipping", file.path.display()));
+            print_error(&format!(
+                "File {} no longer exists, skipping",
+                file.path.display()
+            ));
             continue;
         }
-        
+
         match fs::remove_file(&file.path) {
             Ok(()) => {
                 print_success(&format!("Deleted: {}", file.path.display()));

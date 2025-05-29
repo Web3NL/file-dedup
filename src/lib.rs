@@ -37,7 +37,10 @@ impl FileInfo {
         let mut file = match File::open(&self.path) {
             Ok(f) => f,
             Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
-                return Err(anyhow::anyhow!("Permission denied: {}", self.path.display()));
+                return Err(anyhow::anyhow!(
+                    "Permission denied: {}",
+                    self.path.display()
+                ));
             }
             Err(e) => return Err(e.into()),
         };
