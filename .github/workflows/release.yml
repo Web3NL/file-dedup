@@ -9,8 +9,24 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  check:
+    name: Pre-release Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+      - name: Run tests
+        run: cargo test
+
   build:
     name: Build and Release
+    needs: check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -69,7 +85,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: build
+    needs: [check, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
