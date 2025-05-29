@@ -157,44 +157,6 @@ The tool is optimized for performance:
 - **Streaming hash calculation**: Processes large files efficiently without loading them entirely into memory
 - **Skip empty files**: Ignores zero-byte files to focus on meaningful duplicates
 
-## Future Enhancements
-
-This is a minimal implementation. Potential future features include:
-- Multiple hash algorithm support
-- File filtering options (size, type, patterns)
-- Progress indicators for large scans
-- Configuration file support
-- JSON/CSV output formats
-- Batch processing modes
-- Symlink/hardlink creation options
-
-## Development
-
-### Building from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/file-dedup
-cd file-dedup
-
-# Build in debug mode
-cargo build
-
-# Build optimized release
-cargo build --release
-
-# Run tests
-cargo test
-```
-
-### Code Quality
-
-Before contributing, ensure your code passes all checks:
-
-1. **Formatting**: `cargo fmt --all`
-2. **Linting**: `cargo clippy --all-targets --all-features -- -D warnings`
-3. **Tests**: `cargo test` (all tests must pass)
-
 ## License
 
 MIT License - see LICENSE file for details.
