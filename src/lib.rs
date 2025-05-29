@@ -1,9 +1,9 @@
 //! A minimal file deduplication library
 //! 
-//! This library provides functionality to find duplicate files using SHA-256 hashing
+//! This library provides functionality to find duplicate files using xxHash
 //! with size-based pre-filtering for efficiency.
 
-use sha2::{Digest, Sha256};
+use xxhash_rust::xxh3::Xxh3;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -27,14 +27,14 @@ impl FileInfo {
         }
     }
 
-    /// Calculate SHA-256 hash of the file
+    /// Calculate xxHash (XXH3) of the file
     pub fn calculate_hash(&mut self) -> anyhow::Result<&str> {
         if self.hash.is_some() {
             return Ok(self.hash.as_ref().unwrap());
         }
 
         let mut file = File::open(&self.path)?;
-        let mut hasher = Sha256::new();
+        let mut hasher = Xxh3::new();
         let mut buffer = [0; 8192];
 
         loop {
@@ -45,7 +45,7 @@ impl FileInfo {
             hasher.update(&buffer[..bytes_read]);
         }
 
-        let hash = format!("{:x}", hasher.finalize());
+        let hash = format!("{:016x}", hasher.digest());
         self.hash = Some(hash);
         Ok(self.hash.as_ref().unwrap())
     }
@@ -174,7 +174,7 @@ mod tests {
         // Hash should be calculated once and cached
         assert_eq!(hash1, hash2);
         assert!(!hash1.is_empty());
-        assert_eq!(hash1.len(), 64); // SHA-256 hex length
+        assert_eq!(hash1.len(), 16); // xxHash (XXH3) hex length (64-bit)
     }
 
     #[test]

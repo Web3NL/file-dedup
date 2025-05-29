@@ -1,13 +1,13 @@
 [package]
 name = "file-dedup"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "A minimal file deduplication tool"
 license = "MIT"
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
-sha2 = "0.10"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
 walkdir = "2.0"
 anyhow = "1.0"
 

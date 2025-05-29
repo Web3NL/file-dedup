@@ -3,7 +3,7 @@ use file_dedup::{FileInfo, collect_files, collect_files_for_size_calc, calculate
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-/// A minimal file deduplication tool that finds duplicate files using SHA-256 hashing
+/// A minimal file deduplication tool that finds duplicate files using xxHash
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -81,7 +81,7 @@ fn main() -> anyhow::Result<()> {
                 total_duplicate_files += duplicate_files.len();
 
                 println!("Duplicate Group {} (Size: {} bytes, Hash: {}):", 
-                    duplicate_groups, size, &hash[..16]);
+                    duplicate_groups, size, &hash[..8]);
                 
                 for (i, file) in duplicate_files.iter().enumerate() {
                     let marker = if i == 0 { "[KEEP]" } else { "[DUP] " };
