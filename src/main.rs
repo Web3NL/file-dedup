@@ -85,7 +85,17 @@ fn main() -> anyhow::Result<()> {
                 
                 for (i, file) in duplicate_files.iter().enumerate() {
                     let marker = if i == 0 { "[KEEP]" } else { "[DUP] " };
-                    println!("  {} {}", marker, file.path.display());
+                    let parent_dir = file.path.parent()
+                        .map(|p| p.display().to_string())
+                        .unwrap_or_else(|| "".to_string());
+                    let filename = file.path.file_name()
+                        .map(|f| f.to_string_lossy().to_string())
+                        .unwrap_or_else(|| file.path.display().to_string());
+                    
+                    println!("    Status: {}", marker.trim());
+                    println!("    Location: {}", parent_dir);
+                    println!("    Title: {}", filename);
+                    println!();
                 }
                 println!();
             }
