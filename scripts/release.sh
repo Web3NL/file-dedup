@@ -130,7 +130,9 @@ read -p "Do you want to push now? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     print_status "Pushing changes and tag..."
-    git push origin main  # or master, depending on your default branch
+    # Detect default branch (main or master)
+    DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || git branch --show-current)
+    git push origin "$DEFAULT_BRANCH"
     git push origin "$TAG"
     print_success "Changes and tag pushed to remote repository"
     echo
@@ -140,7 +142,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 else
     print_warning "Changes and tag were not pushed."
     print_warning "You can push manually later with:"
-    print_warning "  git push origin main"
+    DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || git branch --show-current)
+    print_warning "  git push origin $DEFAULT_BRANCH"
     print_warning "  git push origin $TAG"
 fi
 
