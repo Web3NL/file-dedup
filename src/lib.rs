@@ -1,15 +1,15 @@
 //! A minimal file deduplication library
-//! 
+//!
 //! This library provides functionality to find duplicate files using xxHash
 //! with size-based pre-filtering for efficiency. Supports both report-only
 //! and interactive duplicate resolution modes.
 
-use xxhash_rust::xxh3::Xxh3;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
+use xxhash_rust::xxh3::Xxh3;
 
 /// Represents a file with its metadata
 #[derive(Debug, Clone)]
@@ -62,11 +62,15 @@ pub fn collect_files(
     if path.is_file() {
         if let Ok(metadata) = path.metadata() {
             let size = metadata.len();
-            if size > 0 { // Skip empty files
+            if size > 0 {
+                // Skip empty files
                 let file_info = FileInfo::new(path.to_path_buf(), size);
-                files_by_size.entry(size).or_insert_with(Vec::new).push(file_info);
+                files_by_size
+                    .entry(size)
+                    .or_insert_with(Vec::new)
+                    .push(file_info);
                 *total_files += 1;
-                
+
                 if verbose {
                     println!("  Found file: {} ({} bytes)", path.display(), size);
                 }
@@ -79,20 +83,32 @@ pub fn collect_files(
                     if entry.file_type().is_file() {
                         if let Ok(metadata) = entry.metadata() {
                             let size = metadata.len();
-                            if size > 0 { // Skip empty files
+                            if size > 0 {
+                                // Skip empty files
                                 let file_info = FileInfo::new(entry.path().to_path_buf(), size);
-                                files_by_size.entry(size).or_insert_with(Vec::new).push(file_info);
+                                files_by_size
+                                    .entry(size)
+                                    .or_insert_with(Vec::new)
+                                    .push(file_info);
                                 *total_files += 1;
-                                
+
                                 if verbose {
-                                    println!("  Found file: {} ({} bytes)", entry.path().display(), size);
+                                    println!(
+                                        "  Found file: {} ({} bytes)",
+                                        entry.path().display(),
+                                        size
+                                    );
                                 }
                             }
                         }
                     }
                 }
                 Err(e) => {
-                    eprintln!("Warning: Could not access {}: {}", e.path().unwrap_or(Path::new("unknown")).display(), e);
+                    eprintln!(
+                        "Warning: Could not access {}: {}",
+                        e.path().unwrap_or(Path::new("unknown")).display(),
+                        e
+                    );
                 }
             }
         }
@@ -102,9 +118,11 @@ pub fn collect_files(
 }
 
 /// Helper function to collect files for space calculation
-pub fn collect_files_for_size_calc(path: &Path) -> Result<Vec<FileInfo>, Box<dyn std::error::Error>> {
+pub fn collect_files_for_size_calc(
+    path: &Path,
+) -> Result<Vec<FileInfo>, Box<dyn std::error::Error>> {
     let mut files = Vec::new();
-    
+
     if path.is_file() {
         if let Ok(metadata) = path.metadata() {
             let size = metadata.len();
@@ -126,18 +144,21 @@ pub fn collect_files_for_size_calc(path: &Path) -> Result<Vec<FileInfo>, Box<dyn
             }
         }
     }
-    
+
     Ok(files)
 }
 
 /// Calculate potential space savings from removing duplicates
 pub fn calculate_potential_savings(files: &[FileInfo]) -> u64 {
     let mut files_by_size: HashMap<u64, Vec<&FileInfo>> = HashMap::new();
-    
+
     for file in files {
-        files_by_size.entry(file.size).or_insert_with(Vec::new).push(file);
+        files_by_size
+            .entry(file.size)
+            .or_insert_with(Vec::new)
+            .push(file);
     }
-    
+
     let mut savings = 0u64;
     for (size, files_with_size) in files_by_size {
         if files_with_size.len() > 1 {
@@ -145,7 +166,7 @@ pub fn calculate_potential_savings(files: &[FileInfo]) -> u64 {
             savings += size * (files_with_size.len() as u64 - 1);
         }
     }
-    
+
     savings
 }
 
@@ -185,7 +206,10 @@ pub fn find_duplicate_groups(
         for file in &mut files {
             match file.calculate_hash() {
                 Ok(hash) => {
-                    files_by_hash.entry(hash.to_string()).or_insert_with(Vec::new).push(file.clone());
+                    files_by_hash
+                        .entry(hash.to_string())
+                        .or_insert_with(Vec::new)
+                        .push(file.clone());
                 }
                 Err(e) => {
                     eprintln!("Warning: Could not hash {}: {}", file.path.display(), e);
@@ -222,11 +246,11 @@ mod tests {
     fn test_file_info_hash_calculation() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = create_test_file(temp_dir.path(), "test.txt", b"Hello, World!");
-        
+
         let mut file_info = FileInfo::new(file_path, 13);
         let hash1 = file_info.calculate_hash().unwrap().to_string();
         let hash2 = file_info.calculate_hash().unwrap().to_string();
-        
+
         // Hash should be calculated once and cached
         assert_eq!(hash1, hash2);
         assert!(!hash1.is_empty());
@@ -237,32 +261,32 @@ mod tests {
     fn test_identical_files_same_hash() {
         let temp_dir = TempDir::new().unwrap();
         let content = b"This is test content for duplicate detection";
-        
+
         let file1_path = create_test_file(temp_dir.path(), "file1.txt", content);
         let file2_path = create_test_file(temp_dir.path(), "file2.txt", content);
-        
+
         let mut file1 = FileInfo::new(file1_path, content.len() as u64);
         let mut file2 = FileInfo::new(file2_path, content.len() as u64);
-        
+
         let hash1 = file1.calculate_hash().unwrap();
         let hash2 = file2.calculate_hash().unwrap();
-        
+
         assert_eq!(hash1, hash2);
     }
 
     #[test]
     fn test_different_files_different_hash() {
         let temp_dir = TempDir::new().unwrap();
-        
+
         let file1_path = create_test_file(temp_dir.path(), "file1.txt", b"Content A");
         let file2_path = create_test_file(temp_dir.path(), "file2.txt", b"Content B");
-        
+
         let mut file1 = FileInfo::new(file1_path, 9);
         let mut file2 = FileInfo::new(file2_path, 9);
-        
+
         let hash1 = file1.calculate_hash().unwrap();
         let hash2 = file2.calculate_hash().unwrap();
-        
+
         assert_ne!(hash1, hash2);
     }
 
@@ -270,9 +294,9 @@ mod tests {
     fn test_file_info_creation() {
         let path = PathBuf::from("/test/path/file.txt");
         let size = 1024;
-        
+
         let file_info = FileInfo::new(path.clone(), size);
-        
+
         assert_eq!(file_info.path, path);
         assert_eq!(file_info.size, size);
         assert!(file_info.hash.is_none());
@@ -294,7 +318,11 @@ mod tests {
 
         // Unique files
         create_test_file(base_path, "unique1.txt", b"Unique content 1");
-        create_test_file(&base_path.join("subdir1"), "unique2.txt", b"Unique content 2");
+        create_test_file(
+            &base_path.join("subdir1"),
+            "unique2.txt",
+            b"Unique content 2",
+        );
 
         // Different content, same size
         create_test_file(base_path, "same_size1.txt", b"AAAA");
@@ -354,7 +382,7 @@ mod tests {
 
         // Should find 1 duplicate group (the 3 files with identical content)
         assert_eq!(duplicate_groups.len(), 1);
-        
+
         let group = &duplicate_groups[0];
         assert_eq!(group.files.len(), 3);
         assert_eq!(group.size, 25); // Size of "This is duplicate content"

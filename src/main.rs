@@ -1,10 +1,13 @@
 use clap::Parser;
-use file_dedup::{FileInfo, collect_files, collect_files_for_size_calc, calculate_potential_savings, find_duplicate_groups, DuplicateGroup};
-use std::collections::HashMap;
-use std::path::PathBuf;
-use dialoguer::{Confirm, Select};
-use std::fs;
 use colored::*;
+use dialoguer::{Confirm, Select};
+use file_dedup::{
+    calculate_potential_savings, collect_files, collect_files_for_size_calc, find_duplicate_groups,
+    DuplicateGroup, FileInfo,
+};
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 
 /// A minimal file deduplication tool that finds duplicate files using xxHash
 #[derive(Parser)]
@@ -74,7 +77,10 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn handle_report_mode(duplicate_groups: Vec<DuplicateGroup>, paths: &[PathBuf]) -> anyhow::Result<()> {
+fn handle_report_mode(
+    duplicate_groups: Vec<DuplicateGroup>,
+    paths: &[PathBuf],
+) -> anyhow::Result<()> {
     print_header("Found duplicate files:\n");
 
     let mut total_duplicate_files = 0;
@@ -84,16 +90,24 @@ fn handle_report_mode(duplicate_groups: Vec<DuplicateGroup>, paths: &[PathBuf]) 
 
         print_duplicate_group_header(group_idx, duplicate_groups.len(), group.size, &group.hash);
         println!();
-        
+
         for (i, file) in group.files.iter().enumerate() {
-            let marker = if i == 0 { "KEEP".green().bold() } else { "DUP".red().bold() };
-            let parent_dir = file.path.parent()
+            let marker = if i == 0 {
+                "KEEP".green().bold()
+            } else {
+                "DUP".red().bold()
+            };
+            let parent_dir = file
+                .path
+                .parent()
                 .map(|p| p.display().to_string())
                 .unwrap_or_else(|| "".to_string());
-            let filename = file.path.file_name()
+            let filename = file
+                .path
+                .file_name()
                 .map(|f| f.to_string_lossy().to_string())
                 .unwrap_or_else(|| file.path.display().to_string());
-            
+
             println!("    {} Status: {}", "📄".blue(), marker);
             println!("    {} Location: {}", "📍".yellow(), parent_dir.dimmed());
             println!("    {} Title: {}", "🏷️".cyan(), filename.bold());
@@ -105,10 +119,16 @@ fn handle_report_mode(duplicate_groups: Vec<DuplicateGroup>, paths: &[PathBuf]) 
     // Summary
     println!();
     print_header("Summary:");
-    print_info(&format!("Found {} duplicate groups", duplicate_groups.len()));
+    print_info(&format!(
+        "Found {} duplicate groups",
+        duplicate_groups.len()
+    ));
     print_info(&format!("Total duplicate files: {}", total_duplicate_files));
-    print_warning(&format!("Files that could be removed: {}", total_duplicate_files - duplicate_groups.len()));
-    
+    print_warning(&format!(
+        "Files that could be removed: {}",
+        total_duplicate_files - duplicate_groups.len()
+    ));
+
     // Calculate potential space savings
     let mut potential_savings = 0u64;
     for path in paths {
@@ -116,16 +136,22 @@ fn handle_report_mode(duplicate_groups: Vec<DuplicateGroup>, paths: &[PathBuf]) 
             potential_savings += calculate_potential_savings(&files);
         }
     }
-    
+
     if potential_savings > 0 {
-        print_success(&format!("Potential space savings: {}", format_file_size(potential_savings)));
+        print_success(&format!(
+            "Potential space savings: {}",
+            format_file_size(potential_savings)
+        ));
     }
 
     Ok(())
 }
 
 fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Result<()> {
-    print_header(&format!("Found {} duplicate groups. Starting interactive resolution...", duplicate_groups.len()));
+    print_header(&format!(
+        "Found {} duplicate groups. Starting interactive resolution...",
+        duplicate_groups.len()
+    ));
     println!();
 
     let mut total_deleted = 0;
@@ -138,12 +164,24 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
         // Display all files in the group
         for (i, file) in group.files.iter().enumerate() {
             println!("  {} {}:", "📄".blue(), format!("{}", i + 1).bold().white());
-            println!("    {} {}", "📍".yellow(), file.path.parent()
-                .map(|p| p.display().to_string())
-                .unwrap_or_else(|| "/".to_string()).dimmed());
-            println!("    {} {}", "🏷️".cyan(), file.path.file_name()
-                .map(|f| f.to_string_lossy().to_string())
-                .unwrap_or_else(|| file.path.display().to_string()).bold());
+            println!(
+                "    {} {}",
+                "📍".yellow(),
+                file.path
+                    .parent()
+                    .map(|p| p.display().to_string())
+                    .unwrap_or_else(|| "/".to_string())
+                    .dimmed()
+            );
+            println!(
+                "    {} {}",
+                "🏷️".cyan(),
+                file.path
+                    .file_name()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .unwrap_or_else(|| file.path.display().to_string())
+                    .bold()
+            );
             println!();
         }
         println!();
@@ -156,7 +194,10 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
         ];
 
         let selection = Select::new()
-            .with_prompt(&format!("{} What would you like to do with this duplicate group?", "🤔".bold()))
+            .with_prompt(&format!(
+                "{} What would you like to do with this duplicate group?",
+                "🤔".bold()
+            ))
             .items(&options)
             .default(0)
             .interact()?;
@@ -200,7 +241,10 @@ fn handle_interactive_mode(duplicate_groups: Vec<DuplicateGroup>) -> anyhow::Res
     println!();
     print_success("Interactive deduplication complete!");
     print_info(&format!("Files deleted: {}", total_deleted));
-    print_success(&format!("Space saved: {}", format_file_size(total_space_saved)));
+    print_success(&format!(
+        "Space saved: {}",
+        format_file_size(total_space_saved)
+    ));
 
     Ok(())
 }
@@ -210,21 +254,29 @@ fn select_files_to_delete(files: &[FileInfo]) -> anyhow::Result<Vec<&FileInfo>> 
 
     print_warning("Select files to DELETE (you must keep at least one file):");
     println!();
-    
+
     for file in files.iter() {
-        let parent_dir = file.path.parent()
+        let parent_dir = file
+            .path
+            .parent()
             .map(|p| p.display().to_string())
             .unwrap_or_else(|| "".to_string());
-        let filename = file.path.file_name()
+        let filename = file
+            .path
+            .file_name()
             .map(|f| f.to_string_lossy().to_string())
             .unwrap_or_else(|| file.path.display().to_string());
-        
-        let prompt = format!("{} Delete: {}", "🗑️".red(), format!("{}/{}", parent_dir.dimmed(), filename.bold()));
-        
+
+        let prompt = format!(
+            "{} Delete: {}",
+            "🗑️".red(),
+            format!("{}/{}", parent_dir.dimmed(), filename.bold())
+        );
+
         if Confirm::new()
             .with_prompt(&prompt)
             .default(false)
-            .interact()? 
+            .interact()?
         {
             files_to_delete.push(file);
         }
@@ -247,12 +299,19 @@ fn confirm_deletion(files_to_delete: &[&FileInfo]) -> anyhow::Result<bool> {
     println!();
     print_warning("Files selected for deletion:");
     for file in files_to_delete {
-        println!("  {} {}", "🗑️".red(), file.path.display().to_string().dimmed());
+        println!(
+            "  {} {}",
+            "🗑️".red(),
+            file.path.display().to_string().dimmed()
+        );
     }
     println!();
 
     Confirm::new()
-        .with_prompt(&format!("{} Are you sure you want to delete these files? This action cannot be undone!", "⚠️".red().bold()))
+        .with_prompt(&format!(
+            "{} Are you sure you want to delete these files? This action cannot be undone!",
+            "⚠️".red().bold()
+        ))
         .default(false)
         .interact()
         .map_err(|e| anyhow::anyhow!("Failed to get confirmation: {}", e))
@@ -281,12 +340,12 @@ fn format_file_size(bytes: u64) -> String {
     const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
     let mut size = bytes as f64;
     let mut unit_index = 0;
-    
+
     while size >= 1024.0 && unit_index < UNITS.len() - 1 {
         size /= 1024.0;
         unit_index += 1;
     }
-    
+
     if unit_index == 0 {
         format!("{} {}", bytes, UNITS[unit_index])
     } else {
@@ -315,7 +374,8 @@ fn print_info(text: &str) {
 }
 
 fn print_duplicate_group_header(group_idx: usize, total_groups: usize, size: u64, hash: &str) {
-    println!("{} {} {} {} {}", 
+    println!(
+        "{} {} {} {} {}",
         "📁".bold(),
         "Duplicate Group".bold().magenta(),
         format!("{}/{}", group_idx + 1, total_groups).bold().white(),
