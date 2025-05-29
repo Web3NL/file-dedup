@@ -1,6 +1,6 @@
 [package]
 name = "file-dedup"
-version = "1.0.7"
+version = "1.0.8"
 edition = "2021"
 description = "A minimal file deduplication tool with report and interactive modes"
 license = "MIT"
