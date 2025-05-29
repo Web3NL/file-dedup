@@ -153,8 +153,8 @@ print_status "Pushing changes and tag to remote repository..."
 DEFAULT_BRANCH=$(get_default_branch)
 print_status "Using branch: $DEFAULT_BRANCH"
 
-git push origin "$DEFAULT_BRANCH"
-git push origin "$TAG"
+# Push branch and tag together to minimize workflow triggers
+git push origin "$DEFAULT_BRANCH" "$TAG"
 print_success "Changes and tag pushed to remote repository"
 
 echo
