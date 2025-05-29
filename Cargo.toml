@@ -1,0 +1,15 @@
+[package]
+name = "file-dedup"
+version = "0.1.0"
+edition = "2021"
+description = "A minimal file deduplication tool"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+sha2 = "0.10"
+walkdir = "2.0"
+anyhow = "1.0"
+
+[dev-dependencies]
+tempfile = "3.0"
