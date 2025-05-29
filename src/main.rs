@@ -25,6 +25,10 @@ struct Args {
     /// Disable colored output
     #[arg(long)]
     no_color: bool,
+
+    /// Skip system files (like .DS_Store, Thumbs.db, .gitkeep, etc.)
+    #[arg(long)]
+    skip_system_files: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -49,7 +53,7 @@ fn main() -> anyhow::Result<()> {
             print_info(&format!("Scanning: {}", path.display()));
         }
 
-        collect_files(path, &mut files_by_size, &mut total_files, args.verbose)?;
+        collect_files(path, &mut files_by_size, &mut total_files, args.verbose, args.skip_system_files)?;
     }
 
     if args.verbose {

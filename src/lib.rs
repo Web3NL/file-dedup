@@ -58,11 +58,12 @@ pub fn collect_files(
     files_by_size: &mut HashMap<u64, Vec<FileInfo>>,
     total_files: &mut usize,
     verbose: bool,
+    skip_system_files: bool,
 ) -> anyhow::Result<()> {
     if path.is_file() {
         if let Ok(metadata) = path.metadata() {
             let size = metadata.len();
-            if size > 0 { // Skip empty files
+            if size > 0 && !(skip_system_files && is_system_file(path)) { // Skip empty files and system files if requested
                 let file_info = FileInfo::new(path.to_path_buf(), size);
                 files_by_size.entry(size).or_insert_with(Vec::new).push(file_info);
                 *total_files += 1;
@@ -70,6 +71,8 @@ pub fn collect_files(
                 if verbose {
                     println!("  Found file: {} ({} bytes)", path.display(), size);
                 }
+            } else if verbose && skip_system_files && is_system_file(path) {
+                println!("  Skipped system file: {}", path.display());
             }
         }
     } else if path.is_dir() {
@@ -79,7 +82,7 @@ pub fn collect_files(
                     if entry.file_type().is_file() {
                         if let Ok(metadata) = entry.metadata() {
                             let size = metadata.len();
-                            if size > 0 { // Skip empty files
+                            if size > 0 && !(skip_system_files && is_system_file(entry.path())) { // Skip empty files and system files if requested
                                 let file_info = FileInfo::new(entry.path().to_path_buf(), size);
                                 files_by_size.entry(size).or_insert_with(Vec::new).push(file_info);
                                 *total_files += 1;
@@ -87,6 +90,8 @@ pub fn collect_files(
                                 if verbose {
                                     println!("  Found file: {} ({} bytes)", entry.path().display(), size);
                                 }
+                            } else if verbose && skip_system_files && is_system_file(entry.path()) {
+                                println!("  Skipped system file: {}", entry.path().display());
                             }
                         }
                     }
@@ -204,6 +209,54 @@ pub fn find_duplicate_groups(
     Ok(duplicate_groups)
 }
 
+/// Check if a file is a system file that should be skipped
+pub fn is_system_file(path: &Path) -> bool {
+    if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+        match filename {
+            // macOS system files
+            ".DS_Store" => true,
+            ".AppleDouble" => true,
+            ".LSOverride" => true,
+            "Icon\r" => true, // Icon files with carriage return
+            
+            // Windows system files
+            "Thumbs.db" => true,
+            "thumbs.db" => true,
+            "ehthumbs.db" => true,
+            "Desktop.ini" => true,
+            "desktop.ini" => true,
+            
+            // Git and version control
+            ".gitkeep" => true,
+            ".gitignore" => true,
+            ".gitattributes" => true,
+            
+            // IDE and editor files
+            ".vscode" => true,
+            ".idea" => true,
+            
+            // Other common system/temp files
+            ".tmp" => true,
+            ".temp" => true,
+            ".swp" => true,
+            ".swo" => true,
+            
+            _ => {
+                // Check for patterns
+                filename.starts_with("._") || // AppleDouble files
+                filename.starts_with("~$") || // MS Office temp files
+                filename.ends_with(".tmp") ||
+                filename.ends_with(".temp") ||
+                filename.ends_with(".swp") ||
+                filename.ends_with(".swo") ||
+                filename.ends_with("~")
+            }
+        }
+    } else {
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -310,7 +363,7 @@ mod tests {
         let mut total_files = 0;
 
         // Test collecting files from the test directory
-        collect_files(temp_dir.path(), &mut files_by_size, &mut total_files, false).unwrap();
+        collect_files(temp_dir.path(), &mut files_by_size, &mut total_files, false, false).unwrap();
 
         // Should find all 7 files
         assert_eq!(total_files, 7);
@@ -347,7 +400,7 @@ mod tests {
         let mut total_files = 0;
 
         // Collect files first
-        collect_files(temp_dir.path(), &mut files_by_size, &mut total_files, false).unwrap();
+        collect_files(temp_dir.path(), &mut files_by_size, &mut total_files, false, false).unwrap();
 
         // Find duplicate groups
         let duplicate_groups = find_duplicate_groups(files_by_size, false).unwrap();
