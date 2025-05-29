@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
 
@@ -19,18 +17,8 @@ jobs:
       - name: Check commit message
         id: check
         run: |
-          # For push events, check the head commit message
-          # For pull requests, we don't skip (version bumps shouldn't be in PRs anyway)
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            if [[ "${{ github.event.head_commit.message }}" == *"Bump version to"* ]] || [[ "${{ github.event.head_commit.message }}" == *"[skip ci]"* ]]; then
-              echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping CI workflow for version bump commit or [skip ci]"
-            else
-              echo "skip=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
+          # For pull requests, we don't skip CI
+          echo "skip=false" >> $GITHUB_OUTPUT
 
   test:
     name: Test
