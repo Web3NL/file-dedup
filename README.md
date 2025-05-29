@@ -56,13 +56,28 @@ file-dedup --help
 Found duplicate files:
 
 Duplicate Group 1 (Size: 2048576 bytes, Hash: a1b2c3d4):
-  [KEEP] /home/user/Documents/photo1.jpg
-  [DUP]  /home/user/Pictures/photo1_copy.jpg
-  [DUP]  /home/user/Downloads/photo1.jpg
+    Status: [KEEP]
+    Location: /home/user/Documents
+    Title: photo1.jpg
+
+    Status: [DUP]
+    Location: /home/user/Pictures
+    Title: photo1_copy.jpg
+
+    Status: [DUP]
+    Location: /home/user/Downloads
+    Title: photo1.jpg
+
 
 Duplicate Group 2 (Size: 1024 bytes, Hash: f9e8d7c6):
-  [KEEP] /home/user/Documents/notes.txt
-  [DUP]  /home/user/Documents/backup/notes.txt
+    Status: [KEEP]
+    Location: /home/user/Documents
+    Title: notes.txt
+
+    Status: [DUP]
+    Location: /home/user/Documents/backup
+    Title: notes.txt
+
 
 Summary:
   Found 2 duplicate groups
