@@ -7,7 +7,7 @@ A minimal file deduplication tool that finds duplicate files using xxHash.
 - **Two modes**: Report-only mode (safe by default) and interactive deletion mode
 - **Fast detection**: Uses file size pre-filtering before expensive hash calculations
 - **Recursive scanning**: Automatically scans subdirectories
-- **Clear output**: Groups duplicates and shows which files could be removed
+- **Clear output**: Groups duplicates and shows which files could be removed with emoji-enhanced formatting
 - **Interactive resolution**: Choose which duplicates to keep or delete on a per-group basis
 - **Safety checks**: Confirmation prompts and prevents deleting all copies of a file
 - **Cross-platform**: Works on Windows, macOS, and Linux
@@ -62,57 +62,66 @@ file-dedup --help
 
 ### Report Mode (Default)
 ```
-Found duplicate files:
+🔍 Found duplicate files:
 
-Duplicate Group 1 (Size: 2048576 bytes, Hash: a1b2c3d4):
-    Status: [KEEP]
-    Location: /home/user/Documents
-    Title: photo1.jpg
+📁 Duplicate Group 1/1 (52 B) Hash: fc7c9033
 
-    Status: [DUP]
-    Location: /home/user/Pictures
-    Title: photo1_copy.jpg
+    📄 Status: KEEP
+    📍 Location: test_docs/Pictures
+    🏷️ Title: photo1_copy.jpg
 
-    Status: [DUP]
-    Location: /home/user/Downloads
-    Title: photo1.jpg
+    📄 Status: DUP
+    📍 Location: test_docs/Documents
+    🏷️ Title: photo1.jpg
+
+    📄 Status: DUP
+    📍 Location: test_docs/Downloads
+    🏷️ Title: photo1.jpg
 
 
-Summary:
-  Found 1 duplicate groups
-  Total duplicate files: 3
-  Files that could be removed: 2
-  Potential space savings: 4097152 bytes
+
+🔍 Summary:
+ℹ️ Found 1 duplicate groups
+ℹ️ Total duplicate files: 3
+⚠️ Files that could be removed: 2
+✅ Potential space savings: 104 B
 ```
 
 ### Interactive Mode
 ```
-Found 1 duplicate groups. Starting interactive resolution...
+🔍 Found 1 duplicate groups. Starting interactive resolution...
 
-Duplicate Group 1 of 1 (Size: 2048576 bytes each)
-Hash: a1b2c3d4
+📁 Duplicate Group 1/1 (52 B) Hash: fc7c9033
 
-  1: /home/user/Documents/photo1.jpg
-  2: /home/user/Pictures/photo1_copy.jpg
-  3: /home/user/Downloads/photo1.jpg
+  📄 1:
+    📍 test_docs/Pictures
+    🏷️ photo1_copy.jpg
 
-What would you like to do with this duplicate group?
+  📄 2:
+    📍 test_docs/Documents
+    🏷️ photo1.jpg
+
+  📄 3:
+    📍 test_docs/Downloads
+    🏷️ photo1.jpg
+
+
+🤔 What would you like to do with this duplicate group?:
 > Select files to keep (others will be deleted)
   Skip this group (no deletions)
   Keep first file, delete all others
 
-Delete: /home/user/Pictures/photo1_copy.jpg? No
-Delete: /home/user/Downloads/photo1.jpg? Yes
+⚠️ Files selected for deletion:
+  🗑️ test_docs/Documents/photo1.jpg
+  🗑️ test_docs/Downloads/photo1.jpg
 
-Files selected for deletion:
-  - /home/user/Downloads/photo1.jpg
+⚠️ Are you sure you want to delete these files? This action cannot be undone! yes
+✅ Deleted: test_docs/Documents/photo1.jpg
+✅ Deleted: test_docs/Downloads/photo1.jpg
 
-Are you sure you want to delete these files? This action cannot be undone! Yes
-  Deleted: /home/user/Downloads/photo1.jpg
-
-Interactive deduplication complete!
-  Files deleted: 1
-  Space saved: 2048576 bytes
+✅ Interactive deduplication complete!
+ℹ️ Files deleted: 2
+✅ Space saved: 104 B
 ```
 
 ## How It Works
